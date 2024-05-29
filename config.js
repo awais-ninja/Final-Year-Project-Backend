@@ -1,4 +1,5 @@
 module.exports = {
+  port: 8080,
   psql: {
     user: process.env.DB_USER,
     host: process.env.DB_HOST,

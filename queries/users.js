@@ -1,20 +1,33 @@
 const pool = require("../utils/db");
 
-const createUser = async (username, password) => {
-  const query = "INSERT INTO users (username, password) VALUES ($1, $2) RETURNING *";
-  const values = [username, password];
-  const { rows } = await pool.query(query, values);
-  return rows[0];
+const createUser = async (username, email, password) => {
+  const res = await pool.query(
+    `INSERT INTO users (username, email, password)
+     VALUES ($1, $2, $3)
+     RETURNING *`,
+    [username, email, password]
+  );
+  return res.rows[0];
 };
 
 const findUserByUsername = async (username) => {
-  const query = "SELECT * FROM users WHERE username = $1";
-  const values = [username];
-  const { rows } = await pool.query(query, values);
-  return rows[0];
+  const res = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
+  return res.rows[0];
 };
 
-module.exports = {
-  createUser,
-  findUserByUsername,
+const findUserByEmail = async (email) => {
+  const res = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+  return res.rows[0];
 };
+
+const updateUserLoginInfo = async (id, lastLogin, lastIp, lastDevice, lastLocation) => {
+  const res = await pool.query(
+    `UPDATE users 
+     SET last_login = $1, last_ip = $2, last_device = $3, last_location = $4, updated_on = CURRENT_TIMESTAMP 
+     WHERE id = $5 RETURNING *`,
+    [lastLogin, lastIp, lastDevice, lastLocation, id]
+  );
+  return res.rows[0];
+};
+
+module.exports = { createUser, findUserByUsername, findUserByEmail, updateUserLoginInfo };
