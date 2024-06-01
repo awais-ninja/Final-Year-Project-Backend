@@ -1,15 +1,18 @@
-const jwt = require("jsonwebtoken");
-const config = require("../config");
+const { verifyAccessToken } = require("../utils/tokenUtils");
 
-const validateToken = (req, res, next) => {
-  const token = req.cookies.refreshToken;
-  if (!token) return res.status(401).json({ message: "Refresh token not found" });
+const validateAccessToken = (req, res, next) => {
+  const accessToken = req.cookies.authorization;
 
-  jwt.verify(token, config.secrets.accessToken, (err, user) => {
-    if (err) return res.status(403).json({ message: "Invalid token" });
-    req.user = user;
+  if (!accessToken) {
+    return res.status(401).json({ message: "Access token not found" });
+  }
+
+  try {
+    verifyAccessToken(accessToken);
     next();
-  });
+  } catch (error) {
+    return res.status(401).json({ message: "Malformed JWT", refresh: "http://localhost:3000/auth/refresh" });
+  }
 };
 
-module.exports = validateToken;
+module.exports = validateAccessToken;

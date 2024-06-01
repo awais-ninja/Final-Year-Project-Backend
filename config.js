@@ -14,6 +14,8 @@ module.exports = {
   secrets: {
     session: process.env.SESSION_SECRET,
     refreshToken: process.env.REFRESH_TOKEN_SECRET,
+    refreshTokenExpires: 60 * 60 * 24 * 30,
     accessToken: process.env.ACCESS_TOKEN_SECRET,
+    accessTokenExpires: 60,
   },
 };

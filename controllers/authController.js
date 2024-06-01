@@ -1,7 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { createUser, findUserByUsername, findUserByEmail } = require("../queries/users");
-const { generateAccessToken, generateRefreshToken } = require("../utils/tokenUtils");
+const { generateAccessToken, generateRefreshToken, verifyAccessToken, verifyRefreshToken } = require("../utils/tokenUtils");
 const { client, getAsync, setAsync } = require("../utils/redis");
 const config = require("../config");
 
@@ -33,35 +33,43 @@ const login = async (req, res) => {
   const accessToken = generateAccessToken({ userId: user.id, isAdmin: user.is_admin });
   const refreshToken = generateRefreshToken({ userId: user.id, isAdmin: user.is_admin });
 
-  await client.set(`refreshToken:${user.id}`, refreshToken);
+  await client.set(`session-${user.id}`, refreshToken);
 
-  res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: true, maxAge: 60 * 60 * 24 * 7 });
-  res.cookie("accessToken", accessToken, { httpOnly: true, secure: true, maxAge: 60 });
-
-  res.end();
+  delete user.password;
+  user.accessToken = accessToken;
+  user.refreshToken = refreshToken;
+  user.refreshTokenExpires = Date.now() + config.secrets.refreshTokenExpires * 1000;
+  user.accessTokenExpires = Date.now() + config.secrets.accessTokenExpires * 1000;
+  console.log(new Date(user.refreshTokenExpires), new Date(user.accessTokenExpires));
+  return res.json({ user });
 };
 
 const refresh = async (req, res) => {
   console.log(req.cookies);
-  const { refreshToken } = req.cookies;
-  if (!refreshToken) return res.status(401).json({ message: "Refresh token not found" });
+  const token = req.cookies.token;
+  if (!token) return res.status(401).json({ message: "Refresh token not found" });
 
   try {
-    const payload = jwt.verify(refreshToken, process.env.JWT_SECRET);
-    const storedToken = await getAsync(`refreshToken:${payload.userId}`);
+    const payload = verifyRefreshToken(token);
+    const storedToken = await client.get(`session-${payload.userId}`);
 
-    if (storedToken !== refreshToken) {
+    if (storedToken !== token) {
       return res.status(401).json({ message: "Invalid refresh token" });
     }
 
     const newAccessToken = generateAccessToken({ userId: payload.userId, isAdmin: payload.isAdmin });
     const newRefreshToken = generateRefreshToken({ userId: payload.userId, isAdmin: payload.isAdmin });
 
-    await client.set(`refreshToken:${payload.userId}`, newRefreshToken);
+    await client.set(`session-${payload.userId}`, newRefreshToken);
 
-    res.cookie("token", newRefreshToken, { httpOnly: true, secure: false, maxAge: 60 });
-    res.json({ accessToken: newAccessToken });
+    res.json({
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+      accessTokenExpires: Date.now() + config.secrets.accessTokenExpires * 1000,
+      refreshTokenExpires: Date.now() + config.secrets.refreshTokenExpires * 1000,
+    });
   } catch (err) {
+    console.log(err);
     res.status(401).json({ message: "Invalid token" });
   }
 };
