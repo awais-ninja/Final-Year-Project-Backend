@@ -1,10 +1,11 @@
 {
-  "name": "moovit-server",
+  "name": "swiftlink",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "node --watch index.js"
+    "dev": "node --watch index.js",
+    "build": "docker-compose build && docker-compose up"
   },
   "keywords": [],
   "author": "",

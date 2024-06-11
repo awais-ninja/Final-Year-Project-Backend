@@ -11,7 +11,9 @@ const createUser = async (username, email, password) => {
 };
 
 const findUserByUsername = async (username) => {
-  const res = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
+  const res = await pool.query("SELECT * FROM users WHERE username = $1", [
+    username,
+  ]);
   return res.rows[0];
 };
 
@@ -19,8 +21,18 @@ const findUserByEmail = async (email) => {
   const res = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
   return res.rows[0];
 };
+const findUserById = async (id) => {
+  const res = await pool.query(`SELECT * FROM users WHERE id = $1`, [id]);
+  return res.rows[0];
+};
 
-const updateUserLoginInfo = async (id, lastLogin, lastIp, lastDevice, lastLocation) => {
+const updateUserLoginInfo = async (
+  id,
+  lastLogin,
+  lastIp,
+  lastDevice,
+  lastLocation
+) => {
   const res = await pool.query(
     `UPDATE users 
      SET last_login = $1, last_ip = $2, last_device = $3, last_location = $4, updated_on = CURRENT_TIMESTAMP 
@@ -30,4 +42,16 @@ const updateUserLoginInfo = async (id, lastLogin, lastIp, lastDevice, lastLocati
   return res.rows[0];
 };
 
-module.exports = { createUser, findUserByUsername, findUserByEmail, updateUserLoginInfo };
+const getAllUsers = async () => {
+  const { rows } = await pool.query(`SELECT * FROM users ORDER BY created_on`);
+  return rows;
+};
+
+module.exports = {
+  getAllUsers,
+  createUser,
+  findUserByUsername,
+  findUserByEmail,
+  updateUserLoginInfo,
+  findUserById,
+};

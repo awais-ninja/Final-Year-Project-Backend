@@ -12,8 +12,13 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(cors({ credentials: true, origin: "http://localhost:3000" }));
 
+//Route Files
 app.use("/auth", authRoutes);
+app.use("/u", require("./routes/userRoutes"));
+app.use("/o", require("./routes/orderRoutes"));
+app.use("/q", require("./routes/quotationsRoute"));
 
+// Global Controllers FOR TESTING
 app.get("/protected", validateToken, (req, res) => {
   res.json({ message: "This is a protected route" });
 });
